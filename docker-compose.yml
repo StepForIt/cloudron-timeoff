@@ -1,0 +1,29 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.cloudron
+    image: ${DOCKER_DOMAIN}/${DOCKER_USERNAME}/${APP_NAME}:${VERSION:-latest}
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - CLOUDRON_POSTGRESQL_URL=postgres://${POSTGRES_USER:-timeoff}:${POSTGRES_PASSWORD:-timeoff}@db:5432/${POSTGRES_DB:-timeoff}
+      - DATABASE_URL=postgres://${POSTGRES_USER:-timeoff}:${POSTGRES_PASSWORD:-timeoff}@db:5432/${POSTGRES_DB:-timeoff}
+    depends_on:
+      - db
+    volumes:
+      - local-storage:/app/code/data
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-timeoff}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-timeoff}
+      - POSTGRES_DB=${POSTGRES_DB:-timeoff}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+volumes:
+  postgres-data:
+  local-storage:

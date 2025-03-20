@@ -9,22 +9,64 @@ includes:
 
 vars:
   APP_NAME: timeoff
-  CLOUDRON_VERSION: 1.0.0
+  VERSION: latest
 
 tasks:
-  docker:login:
+  login:
+    alias: 
+      - docker:login
+      - docker-login
     desc: Login to Docker
     cmds:
       - docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD $DOCKER_DOMAIN
   build:
     desc: Build the Docker image for Cloudron
     cmds:
-      - docker build -t {{.APP_NAME}}:{{.CLOUDRON_VERSION}} .
+      - docker build -f Dockerfile.cloudron -t {{.DOCKER_DOMAIN}}/{{.DOCKER_USERNAME}}/{{.APP_NAME}}:{{.VERSION}} .
+
+  run:
+    desc: Run the Docker image for Cloudron
+    cmds:
+      - docker run -d -p 3000:3000 {{.DOCKER_DOMAIN}}/{{.DOCKER_USERNAME}}/{{.APP_NAME}}:{{.VERSION}}
+  compose:up:
+    desc: Start all services with Docker Compose
+    cmds:
+      - docker compose up -d
+
+  compose:down:
+    desc: Stop and remove all Docker Compose services
+    cmds:
+      - docker compose down
+
+  compose:logs:
+    desc: View logs from all services
+    cmds:
+      - docker compose logs -f
+
+  compose:build:
+    desc: Build all services
+    cmds:
+      - docker compose build
 
   dev:
     desc: Start development environment
+    deps: [compose:up]
     cmds:
-      - docker-compose up
+      - echo "Development environment started with Docker Compose"
+      - task compose:logs
+
+  docker:clean:
+    desc: Nettoie les conteneurs et images Docker inutilisés
+    cmds:
+      - docker container prune -f     # Supprime tous les conteneurs arrêtés
+      - docker image prune -af        # Supprime toutes les images non utilisées
+      - docker volume prune -f        # Supprime les volumes non utilisés
+
+  docker:clean-all:
+    desc: Nettoie TOUS les conteneurs, images et volumes Docker (ATTENTION)
+    cmds:
+      - docker compose down -v        # Arrête les conteneurs et supprime les volumes
+      - docker system prune -af --volumes  # Supprime tout (conteneurs, images, volumes)
 
   dev-down:
     desc: Stop development environment

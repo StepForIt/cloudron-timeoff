@@ -1,10 +1,9 @@
-FROM cloudron/base:5.0.0
+FROM cloudron/base:5.0.0@sha256:04fd70dbd8ad6149c19de39e35718e024417c3e01dc9c6637eaf4a41ec4e596c
 
-# Définition du dossier de l'application
-WORKDIR /app
+
 
 # Installer les dépendances système en une seule commande
-RUN apt update && apt install -y git build-essential python3 python3-pip curl \
+RUN apt update && apt install -y git build-essential python3 python3-pip curl sqlite3 \
     && rm -rf /var/lib/apt/lists/*
 
 # Installer Node.js 18 pour éviter les problèmes de compatibilité
@@ -16,25 +15,29 @@ RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
 RUN node -v && npm -v
 
 # Cloner le dépôt officiel de TimeOff Management
-RUN git clone https://github.com/timeoff-management/timeoff-management-application.git /app
+RUN git clone https://github.com/timeoff-management/timeoff-management-application.git /app/code
 
-# Désactiver sqlite3 (forçer PostgreSQL)
-RUN sed -i 's/"sqlite3": ".\+"/"pg": "^8.7.1"/' /app/package.json
+# Ajouter PostgreSQL comme dépendance supplémentaire
+RUN cd /app/code && npm install pg@^8.7.1 --save
+
+# Définition du dossier de l'application
+WORKDIR /app/code
+
+# copy code
+ADD start.sh /app/code/
 
 # Installer les dépendances avec `--omit=dev` pour éviter d'installer les devDependencies
-WORKDIR /app
 RUN npm install --omit=dev
 
 # Définir les permissions pour Cloudron
-RUN chown -R cloudron:cloudron /app
+RUN chown -R cloudron:cloudron /app/code
 
 # Exposer le port de l'application
 EXPOSE 3000
 
 # Copier le script de démarrage
-COPY start.sh /app/start.sh
-RUN chmod +x /app/start.sh
+RUN chmod +x /app/code/start.sh
 
 # Lancer l'application avec Cloudron
-CMD [ "/app/start.sh" ]
+CMD [ "/app/code/start.sh" ]
 
