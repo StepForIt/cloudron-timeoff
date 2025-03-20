@@ -31,6 +31,10 @@ RUN chown -R cloudron:cloudron /app
 # Exposer le port de l'application
 EXPOSE 3000
 
+# Copier le script de démarrage
+COPY start.sh /app/start.sh
+RUN chmod +x /app/start.sh
+
 # Lancer l'application avec Cloudron
 CMD [ "/app/start.sh" ]
 

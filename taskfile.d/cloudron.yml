@@ -1,0 +1,42 @@
+version: '3'
+
+
+tasks:
+  login:
+    desc: Login to Cloudron
+    cmds:
+      - cloudron login -u $CLOUDRON_USERNAME -p $CLOUDRON_PASSWORD $CLOUDRON_DOMAIN
+
+  build:
+    desc: Package the application for Cloudron
+    summary: Package the application for Cloudron
+
+    cmds:
+      - cloudron build --set-repository {{.DOCKER_DOMAIN}}/{{.DOCKER_USERNAME}}/{{.APP_NAME}} --tag latest
+
+  install:
+    desc: Install the application on Cloudron
+    cmds:
+      - cloudron install --image {{.DOCKER_DOMAIN}}/{{.DOCKER_USERNAME}}/{{.APP_NAME}}:latest -l {{.APP_NAME}} -p 80:3000
+
+  update:
+    desc: Update the application on Cloudron
+    cmds:
+      - cloudron update --image {{.DOCKER_DOMAIN}}/{{.DOCKER_USERNAME}}/{{.APP_NAME}}:latest --app {{.APP_NAME}}
+
+  remove:
+    alias: uninstall
+    desc: Remove the application from Cloudron
+    cmds:
+      - cloudron uninstall --app {{.APP_NAME}}
+
+  reinstall:
+    desc: Reinstall the application on Cloudron
+    cmds:
+      - task: remove
+      - task: install
+
+  logs:
+    desc: View Cloudron application logs
+    cmds:
+      - cloudron logs -f

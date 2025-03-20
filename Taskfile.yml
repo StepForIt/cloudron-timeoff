@@ -1,0 +1,48 @@
+version: '3'
+
+
+dotenv: ['.env.local']
+
+includes:
+  cloudron: 
+    taskfile: ./taskfile.d/cloudron.yml
+
+vars:
+  APP_NAME: timeoff
+  CLOUDRON_VERSION: 1.0.0
+
+tasks:
+  docker:login:
+    desc: Login to Docker
+    cmds:
+      - docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD $DOCKER_DOMAIN
+  build:
+    desc: Build the Docker image for Cloudron
+    cmds:
+      - docker build -t {{.APP_NAME}}:{{.CLOUDRON_VERSION}} .
+
+  dev:
+    desc: Start development environment
+    cmds:
+      - docker-compose up
+
+  dev-down:
+    desc: Stop development environment
+    cmds:
+      - docker-compose down
+
+  test:
+    desc: Run tests
+    cmds:
+      - echo "Running tests..."
+
+  clean:
+    desc: Clean build artifacts and Docker images
+    cmds:
+      - docker-compose down -v
+      - docker rmi {{.APP_NAME}}:{{.CLOUDRON_VERSION}} || true
+
+  default:
+    desc: Show available tasks
+    cmds:
+      - task --list
