@@ -1,0 +1,14 @@
+{
+  "id": "timeoff.mmcd.dev",
+  "title": "TimeOff Management",
+  "version": "1.0.0",
+  "description": "Application de gestion des congés",
+  "healthCheckPath": "/",
+  "httpPort": 3000,
+  "tags": ["HR", "management", "vacation"],
+  "addons": {
+    "postgresql": {},
+    "localstorage": {}
+  },
+  "manifestVersion": 2
+}
