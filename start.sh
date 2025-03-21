@@ -17,20 +17,14 @@ cat > /app/data/config/db.json <<EOF
     "dialect": "postgres"
   },
   "production": {
-    "username": "${CLOUDRON_POSTGRESQL_USERNAME}",
-    "password": "${CLOUDRON_POSTGRESQL_PASSWORD}",
-    "database": "${CLOUDRON_POSTGRESQL_DATABASE}",
-    "host": "${CLOUDRON_POSTGRESQL_HOST}",
-    "port": ${CLOUDRON_POSTGRESQL_PORT},
-    "dialect": "postgres"
+    "dialect": "sqlite",
+    "storage": "/app/data/db.production.sqlite",
+    "logging": false 
   },
   "development": {
-    "username": "${CLOUDRON_POSTGRESQL_USERNAME}",
-    "password": "${CLOUDRON_POSTGRESQL_PASSWORD}",
-    "database": "${CLOUDRON_POSTGRESQL_DATABASE}",
-    "host": "${CLOUDRON_POSTGRESQL_HOST}",
-    "port": ${CLOUDRON_POSTGRESQL_PORT},
-    "dialect": "postgres"
+    "dialect": "sqlite",
+    "storage": "/app/data/db.development.sqlite",
+    "logging": false 
   }
 }
 EOF
@@ -76,9 +70,8 @@ chown cloudron:cloudron /app/data/config/db.json
 mkdir -p /app/data/bin
 cp /app/code/bin/wwww.backup /app/data/bin/wwww
 
-#gosu cloudron:cloudron npm run db-update
-
+chown -R cloudron:cloudron /app/data
 
 echo "Démarrage de l'application..."
 
-NODE_ENV=production exec gosu cloudron:cloudron npm start
+NODE_ENV=development exec gosu cloudron:cloudron npm start
