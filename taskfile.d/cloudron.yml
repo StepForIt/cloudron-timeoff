@@ -17,26 +17,38 @@ tasks:
   install:
     desc: Install the application on Cloudron
     cmds:
-      - cloudron install --image {{.DOCKER_DOMAIN}}/{{.DOCKER_USERNAME}}/{{.APP_NAME}}:{{.VERSION}} -l {{.APP_NAME}} -p 80:3000
+      - cloudron install --image {{.DOCKER_DOMAIN}}/{{.DOCKER_USERNAME}}/{{.APP_NAME}}:{{.VERSION}} -l {{.APP_NAME}}
 
   update:
+    prompt: "Are you sure you want to update the application?"
     desc: Update the application on Cloudron
     cmds:
       - cloudron update --image {{.DOCKER_DOMAIN}}/{{.DOCKER_USERNAME}}/{{.APP_NAME}}:{{.VERSION}} --app {{.APP_NAME}}
 
   remove:
+    prompt: "Are you sure you want to remove the application?"
     alias: uninstall
     desc: Remove the application from Cloudron
     cmds:
       - cloudron uninstall --app {{.APP_NAME}}
 
+  remove-maybe:
+    internal: true
+    desc: Remove the application from Cloudron (if exists)
+    cmds:
+      - cloudron uninstall --app {{.APP_NAME}}
+    ignore_error: true
+
   reinstall:
+    prompt: "Are you sure you want to reinstall the application? It will remove all data."
     desc: Reinstall the application on Cloudron
     cmds:
-      - task: remove
+      - task: build
+      - task: remove-maybe
+        ignore_error: true
       - task: install
 
   logs:
     desc: View Cloudron application logs
     cmds:
-      - cloudron logs -f
+      - cloudron logs -f --app {{.APP_NAME}}

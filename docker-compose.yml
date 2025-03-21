@@ -1,5 +1,10 @@
 services:
   app:
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
     build:
       context: .
       dockerfile: Dockerfile.cloudron
@@ -7,23 +12,49 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NODE_ENV=development
-      - CLOUDRON_POSTGRESQL_URL=postgres://${POSTGRES_USER:-timeoff}:${POSTGRES_PASSWORD:-timeoff}@db:5432/${POSTGRES_DB:-timeoff}
-      - DATABASE_URL=postgres://${POSTGRES_USER:-timeoff}:${POSTGRES_PASSWORD:-timeoff}@db:5432/${POSTGRES_DB:-timeoff}
-    depends_on:
-      - db
+      - NODE_ENV=production
+      - CLOUDRON_POSTGRESQL_DATABASE=${POSTGRES_DB:-timeoff}
+      - CLOUDRON_POSTGRESQL_USERNAME=${POSTGRES_USER:-timeoff}
+      - CLOUDRON_POSTGRESQL_PASSWORD=${POSTGRES_PASSWORD:-timeoff}
+      - CLOUDRON_POSTGRESQL_HOST=${POSTGRES_HOST:-db}
+      - CLOUDRON_POSTGRESQL_PORT=${POSTGRES_PORT:-5432}
+      - CLOUDRON_REDIS_HOST=${REDIS_HOST:-redis}
+      - CLOUDRON_REDIS_PORT=${REDIS_PORT:-6379}
+      - CLOUDRON_REDIS_PASSWORD=${REDIS_PASSWORD:-redis}
+      - CLOUDRON_APP_ORIGIN=${APP_ORIGIN:-http://localhost:3000}
+      - CLOUDRON_MAIL_SMTP_SERVER=${SMTP_SERVER:-mail}
+      - CLOUDRON_MAIL_SMTP_PORT=${SMTP_PORT:-25}
+      - CLOUDRON_MAIL_SMTP_USERNAME=${SMTP_USERNAME:-smtp}
+      - CLOUDRON_MAIL_SMTP_PASSWORD=${SMTP_PASSWORD:-smtp}
     volumes:
       - local-storage:/app/code/data
-
   db:
-    image: postgres:15-alpine
+    image: postgres:15
     environment:
       - POSTGRES_USER=${POSTGRES_USER:-timeoff}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-timeoff}
       - POSTGRES_DB=${POSTGRES_DB:-timeoff}
+      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
     volumes:
       - postgres-data:/var/lib/postgresql/data
+  redis:
+    image: redis:7
+    environment:
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-redis}
+    volumes:
+      - redis-data:/data
+  mail:
+    image: mailhog/mailhog
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    environment:
+      - SMTP_USERNAME=${SMTP_USERNAME:-smtp}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-smtp}
 
+  
 volumes:
+  redis-data:
   postgres-data:
   local-storage:

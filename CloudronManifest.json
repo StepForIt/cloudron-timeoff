@@ -1,14 +1,29 @@
 {
   "id": "timeoff.mmcd.dev",
   "title": "TimeOff Management",
+  "tagline": "Self-hosted leave management application",
   "version": "0.1.0",
-  "description": "Application de gestion des congés",
+  "description": "file://DESCRIPTION.md",
   "healthCheckPath": "/",
+  "addons": {
+    "localstorage": {},
+    "postgresql": {
+      "version": "10"
+    },
+    "redis": {
+      "version": "7"
+    },
+    "sendmail": {
+      "supportsDisplayName": true
+    }
+  },
+  "multiDomain": true,
+  "changelog": "file://CHANGELOG.md",
+  "postInstallMessage": "file://POSTINSTALL.md",
+  "contactEmail": "support@stepforit.fr",
   "httpPort": 3000,
   "tags": ["HR", "management", "vacation"],
-  "addons": {
-    "postgresql": {},
-    "localstorage": {}
-  },
-  "manifestVersion": 2
+  "icon": "logo.png",
+  "manifestVersion": 2,
+  "minBoxVersion": "8.2.0"
 }

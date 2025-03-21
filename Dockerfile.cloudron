@@ -1,43 +1,61 @@
-FROM cloudron/base:5.0.0@sha256:04fd70dbd8ad6149c19de39e35718e024417c3e01dc9c6637eaf4a41ec4e596c
+# ------------------------------------------------
+# Stage 1: Git clone
+FROM alpine:3.19 as cloner
 
+RUN apk add --no-cache git
+WORKDIR /app
+RUN git clone https://github.com/timeoff-management/application.git timeoff
 
+# ------------------------------------------------
+# Stage 2: Build with Node.js and required tools
+FROM node:14 as builder
 
-# Installer les dépendances système en une seule commande
-RUN apt update && apt install -y git build-essential python3 python3-pip curl sqlite3 \
-    && rm -rf /var/lib/apt/lists/*
+# Install build dependencies
+RUN apt update && apt install -y \
+    python3 \
+    make \
+    g++ \
+    sqlite3 \
+    libsqlite3-dev \
+    && ln -sf python3 /usr/bin/python
 
-# Installer Node.js 18 pour éviter les problèmes de compatibilité
-RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
-    && apt install -y nodejs \
-    && npm install -g npm@latest
+WORKDIR /app/timeoff
+COPY --from=cloner /app/timeoff .
 
-# Vérifier la version de Node.js (juste pour debug)
-RUN node -v && npm -v
+# Install dependencies
+RUN npm install 
+RUN npm install pg@6.4.2
 
-# Cloner le dépôt officiel de TimeOff Management
-RUN git clone https://github.com/timeoff-management/timeoff-management-application.git /app/code
+# ------------------------------------------------
+# Stage 3: Final image (runtime only)
+FROM cloudron/base:4.2.0@sha256:46da2fffb36353ef714f97ae8e962bd2c212ca091108d768ba473078319a47f4
 
-# Ajouter PostgreSQL comme dépendance supplémentaire
-RUN cd /app/code && npm install pg@^8.7.1 --save
+RUN mkdir -p /app/code/db && chown -R cloudron:cloudron /app/code
 
-# Définition du dossier de l'application
 WORKDIR /app/code
 
-# copy code
-ADD start.sh /app/code/
+ARG NODE_VERSION=14.9.0
+RUN mkdir -p /usr/local/node-${NODE_VERSION} && curl -L https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.gz | tar zxf - --strip-components 1 -C /usr/local/node-${NODE_VERSION}
+ENV PATH /usr/local/node-${NODE_VERSION}/bin:$PATH
 
-# Installer les dépendances avec `--omit=dev` pour éviter d'installer les devDependencies
-RUN npm install --omit=dev
+# Copy app + pre-built node_modules
+COPY --from=builder /app/timeoff .
 
-# Définir les permissions pour Cloudron
-RUN chown -R cloudron:cloudron /app/code
+RUN mkdir -p /app/data/config
 
-# Exposer le port de l'application
-EXPOSE 3000
+RUN cp ./config/db.json /app/data/config/db.json && \
+    cp ./config/app.json /app/data/config/app.json
 
-# Copier le script de démarrage
+RUN mv ./config/db.json ./config/db.json.backup && \
+    mv ./config/app.json ./config/app.json.backup && \
+    cp ./bin/wwww ./bin/wwww.backup
+
+RUN ln -s /app/data/config/db.json /app/code/config/db.json
+RUN ln -s /app/data/config/app.json /app/code/config/app.json
+
+RUN sed -i "s/app\.listen(app.get('port')/app.listen(app.get('port'), '0.0.0.0'/" /app/code/bin/wwww
+
+COPY start.sh /app/code/
 RUN chmod +x /app/code/start.sh
 
-# Lancer l'application avec Cloudron
-CMD [ "/app/code/start.sh" ]
-
+CMD [ "/app/code/start.sh"]
